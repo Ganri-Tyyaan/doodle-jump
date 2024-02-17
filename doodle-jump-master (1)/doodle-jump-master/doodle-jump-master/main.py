@@ -1,7 +1,6 @@
 def main():
     import pygame
     from scripts.app import App
-    
     pygame.init()
     app=App()
     app.run()

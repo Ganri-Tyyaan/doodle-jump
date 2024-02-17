@@ -20,8 +20,10 @@ class Player(Sprite):
         if self.is_walking_right != self.is_walking_left:
             if self.is_walking_right:
                 self.rect.x += self.speed
+                self.image=self.original_image.copy()
             else:
                 self.rect.x -= self.speed
+                self.rect=pygame.transforms.flip(self.original_image,True,False)
         self.on_platform=False
         if self.rect.right<0:
             self.rect.left=display_size[0]

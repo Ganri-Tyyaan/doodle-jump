@@ -5,10 +5,10 @@ from scripts.player import Player
 from scripts.platform import Platform
 import os
 from scripts.constants import display_size
-
+from scripts.platform_generation import PLatformGeneration
 class Game:
     def __init__(self)->None:
-
+        self.platform_generator = PlatformGenerator(200)
         self.background = load_image("assets","images","background.png")
         self.offset_y=0
         self.player=Player(
@@ -17,13 +17,14 @@ class Game:
             5,20,0.65
         )
         self.losed=False
-        self.font=pygame.Font()
-        self.platforms=list(os.path.join("assets","fonts","pixel.ttf"),32)
-        self.platforms=[
-            Platform((240,700), load_image("assets","images","platform.png")),
-            Platform((100,450), load_image("assets","images","platform.png")),
-            Platform((400,200), load_image("assets","images","platform.png")),
-        ]
+        self.font=pygame.Font(os.path.join("assets","fonts","pixel.ttf"),32)
+        self.platforms=list()
+        self.jump_sound=pygame.mixer.Sound(os.path.join("assets","sounds","jump.mp3"))
+        self.falling_sound=pygame.mixer.Sound(os.path.join("assets","sounds","falling.mp3"))
+        self.breaking_sound=pygame.mixer.Sound(os.path.join("assets","sounds","platform-break.mp3"))
+        pygame.mixer.music.load(os.path.join("assets","music","caves.mp3"))
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.4)
     def render(self,surface)->None:
         surface.blit(self.background,(0,0))
         for platform in self.platforms:
@@ -63,14 +64,22 @@ class Game:
             self.player.is_walking_right=False
     def handle_create_platform_event(self,platform):
         self.platforms.append(platform)
-    def update(self,surface):
+    def update(self,):
         self.player.update()
         self.losed=self.player.rect.top-self.offset_y>=display_size[1]
         if self.losed:
             return
         for platform in self.platforms.copy():
+            platform.update()
             if self.player.collide_sprite(platform):
                 self.player.on_platform=True
+                if platform.type=='BreakingPLatform':
+                    self.platforms.remove(platform)
+                elif platform.type=='DisappearingPLatform':
+                    platform.player_touched=True
+            if platform.type=='DisappearingPLatform' and platform.disappearance_time <=0:
+                self.platforms.remove(platform)
+
         if self.player.rect.bottom-self.offset_y<display_size[1] / 3:
             self.offset_y=self.player.rect.bottom -display_size[1] / 3
         self.platform_generation.update(self.offset_y,self.platforms)
@@ -78,9 +87,10 @@ class Game:
             self.platform_generation.update(self.offset_y,self.platforms)
 
     def restart(self):
+        self.player.reset((240,600))
         self.losed=False
         self.offset_y=0
         self.platforms=list()
-        self.platform_generation.create_start_configuration()
+        self.platform_generator.create_start_configuration()
 
 
